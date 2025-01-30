@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>College Attendance Management System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+</head>
+<body class="bg-gray-50 font-['Inter']">
+    <div class="min-h-screen">
+        <nav class="bg-blue-600 text-white p-4">
+            <div class="container mx-auto flex justify-between items-center">
+                <h1 class="text-xl font-bold">Attendance Manager</h1>
+                <button id="addNewBtn" class="bg-white text-blue-600 px-4 py-2 rounded-lg font-medium hover:bg-blue-50">
+                    <i class="bi bi-plus"></i> Add New
+                </button>
+            </div>
+        </nav>
+
+        <main class="container mx-auto p-4">
+            <!-- Data Management Section -->
+            <div class="grid md:grid-cols-3 gap-4 mb-8">
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <h2 class="text-lg font-semibold mb-4">Students</h2>
+                    <div id="studentsList" class="space-y-2"></div>
+                    <button onclick="openModal('student')" class="mt-4 text-blue-600 hover:text-blue-700">
+                        <i class="bi bi-plus-circle"></i> Add Student
+                    </button>
+                </div>
+
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <h2 class="text-lg font-semibold mb-4">Subjects</h2>
+                    <div id="subjectsList" class="space-y-2"></div>
+                    <button onclick="openModal('subject')" class="mt-4 text-blue-600 hover:text-blue-700">
+                        <i class="bi bi-plus-circle"></i> Add Subject
+                    </button>
+                </div>
+
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <h2 class="text-lg font-semibold mb-4">Timetable</h2>
+                    <div id="timetableList" class="space-y-2"></div>
+                    <button onclick="openModal('timetable')" class="mt-4 text-blue-600 hover:text-blue-700">
+                        <i class="bi bi-plus-circle"></i> Add Schedule
+                    </button>
+                </div>
+            </div>
+
+            <!-- Attendance Section -->
+            <div class="bg-white rounded-lg shadow p-4">
+                <h2 class="text-lg font-semibold mb-4">Today's Attendance</h2>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subject</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="attendanceTable" class="bg-white divide-y divide-gray-200">
+                            <!-- Attendance rows will be added here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+
+        <!-- Modal -->
+        <div id="modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
+            <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+                <div id="modalContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let students = [];
+        let subjects = [];
+        let timetable = [];
+        let attendance = [];
+
+        function openModal(type) {
+            const modal = document.getElementById('modal');
+            const modalContent = document.getElementById('modalContent');
+            modal.classList.remove('hidden');
+
+            let content = '';
+            switch(type) {
+                case 'student':
+                    content = `
+                        <h3 class="text-lg font-semibold mb-4">Add New Student</h3>
+                        <input type="text" id="studentName" placeholder="Student Name" class="w-full p-2 mb-4 border rounded">
+                        <input type="text" id="studentId" placeholder="Student ID" class="w-full p-2 mb-4 border rounded">
+                        <div class="flex justify-end">
+                            <button onclick="addStudent()" class="bg-blue-600 text-white px-4 py-2 rounded">Add</button>
+                            <button onclick="closeModal()" class="ml-2 bg-gray-200 px-4 py-2 rounded">Cancel</button>
+                        </div>
+                    `;
+                    break;
+                case 'subject':
+                    content = `
+                        <h3 class="text-lg font-semibold mb-4">Add New Subject</h3>
+                        <input type="text" id="subjectName" placeholder="Subject Name" class="w-full p-2 mb-4 border rounded">
+                        <input type="text" id="subjectCode" placeholder="Subject Code" class="w-full p-2 mb-4 border rounded">
+                        <div class="flex justify-end">
+                            <button onclick="addSubject()" class="bg-blue-600 text-white px-4 py-2 rounded">Add</button>
+                            <button onclick="closeModal()" class="ml-2 bg-gray-200 px-4 py-2 rounded">Cancel</button>
+                        </div>
+                    `;
+                    break;
+                case 'timetable':
+                    content = `
+                        <h3 class="text-lg font-semibold mb-4">Add Schedule</h3>
+                        <select id="scheduleSubject" class="w-full p-2 mb-4 border rounded">
+                            ${subjects.map(subject => `<option value="${subject.id}">${subject.name}</option>`).join('')}
+                        </select>
+                        <input type="date" id="scheduleDate" class="w-full p-2 mb-4 border rounded">
+                        <input type="time" id="scheduleTime" class="w-full p-2 mb-4 border rounded">
+                        <div class="flex justify-end">
+                            <button onclick="addSchedule()" class="bg-blue-600 text-white px-4 py-2 rounded">Add</button>
+                            <button onclick="closeModal()" class="ml-2 bg-gray-200 px-4 py-2 rounded">Cancel</button>
+                        </div>
+                    `;
+                    break;
+            }
+            modalContent.innerHTML = content;
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.add('hidden');
+        }
+
+        function addStudent() {
+            const name = document.getElementById('studentName').value;
+            const id = document.getElementById('studentId').value;
+            if (name && id) {
+                students.push({ id, name });
+                updateStudentsList();
+                closeModal();
+            }
+        }
+
+        function addSubject() {
+            const name = document.getElementById('subjectName').value;
+            const code = document.getElementById('subjectCode').value;
+            if (name && code) {
+                subjects.push({ id: code, name });
+                updateSubjectsList();
+                closeModal();
+            }
+        }
+
+        function addSchedule() {
+            const subject = document.getElementById('scheduleSubject').value;
+            const date = document.getElementById('scheduleDate').value;
+            const time = document.getElementById('scheduleTime').value;
+            if (subject && date && time) {
+                timetable.push({ subject, date, time });
+                updateTimetableList();
+                closeModal();
+            }
+        }
+
+        function updateStudentsList() {
+            const list = document.getElementById('studentsList');
+            list.innerHTML = students.map(student => 
+                `<div class="flex justify-between items-center p-2 bg-gray-50 rounded">
+                    <span>${student.name} (${student.id})</span>
+                    <button onclick="removeStudent('${student.id}')" class="text-red-600"><i class="bi bi-trash"></i></button>
+                </div>`
+            ).join('');
+            updateAttendanceTable();
+        }
+
+        function updateSubjectsList() {
+            const list = document.getElementById('subjectsList');
+            list.innerHTML = subjects.map(subject => 
+                `<div class="flex justify-between items-center p-2 bg-gray-50 rounded">
+                    <span>${subject.name} (${subject.id})</span>
+                    <button onclick="removeSubject('${subject.id}')" class="text-red-600"><i class="bi bi-trash"></i></button>
+                </div>`
+            ).join('');
+            updateAttendanceTable();
+        }
+
+        function updateTimetableList() {
+            const list = document.getElementById('timetableList');
+            list.innerHTML = timetable.map((schedule, index) => 
+                `<div class="flex justify-between items-center p-2 bg-gray-50 rounded">
+                    <span>${subjects.find(s => s.id === schedule.subject)?.name} - ${schedule.date} ${schedule.time}</span>
+                    <button onclick="removeSchedule(${index})" class="text-red-600"><i class="bi bi-trash"></i></button>
+                </div>`
+            ).join('');
+        }
+
+        function updateAttendanceTable() {
+            const table = document.getElementById('attendanceTable');
+            table.innerHTML = students.map(student => 
+                subjects.map(subject => 
+                    `<tr>
+                        <td class="px-6 py-4 whitespace-nowrap">${student.name}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">${subject.name}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            ${getAttendanceStatus(student.id, subject.id)}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <button onclick="markAttendance('${student.id}', '${subject.id}', 'present')" class="text-green-600 mr-2">
+                                <i class="bi bi-check-circle"></i>
+                            </button>
+                            <button onclick="markAttendance('${student.id}', '${subject.id}', 'absent')" class="text-red-600">
+                                <i class="bi bi-x-circle"></i>
+                            </button>
+                        </td>
+                    </tr>`
+                ).join('')
+            ).join('');
+        }
+
+        function getAttendanceStatus(studentId, subjectId) {
+            const record = attendance.find(a => a.studentId === studentId && a.subjectId === subjectId);
+            if (!record) return '-';
+            return record.status === 'present' ? 
+                '<span class="text-green-600">Present</span>' : 
+                '<span class="text-red-600">Absent</span>';
+        }
+
+        function markAttendance(studentId, subjectId, status) {
+            const index = attendance.findIndex(a => a.studentId === studentId && a.subjectId === subjectId);
+            if (index >= 0) {
+                attendance[index].status = status;
+            } else {
+                attendance.push({ studentId, subjectId, status, date: new Date() });
+            }
+            updateAttendanceTable();
+        }
+
+        function removeStudent(id) {
+            students = students.filter(s => s.id !== id);
+            updateStudentsList();
+        }
+
+        function removeSubject(id) {
+            subjects = subjects.filter(s => s.id !== id);
+            updateSubjectsList();
+        }
+
+        function removeSchedule(index) {
+            timetable.splice(index, 1);
+            updateTimetableList();
+        }
+
+        // Initialize with some sample data
+        students.push({ id: "S001", name: "John Doe" });
+        subjects.push({ id: "CS101", name: "Computer Science" });
+        updateStudentsList();
+        updateSubjectsList();
+        updateTimetableList();
+    </script>
+<script>document.body.addEventListener('wheel', e => { if (!e.ctrlKey) return; e.preventDefault(); return }, { passive: false })</script>
+	</body>
+</html>
